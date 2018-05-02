@@ -1,41 +1,7 @@
 ﻿// Learn more about F# at http://fsharp.org
 // See the 'F# Tutorial' project for more help.
 open Gurobi
-
-type F =
-| Any
-| Str of string
-
-let LinExpr (x:float) =
-    Gurobi.GRBLinExpr(x)
-
-let AddConstr (m:Gurobi.GRBModel) l o r n =
-    m.AddConstr(l, o, r, n)
-    ()
-
-module Filter =
-    let equals (f:F) (s:string) =
-        match f with
-        | Any -> true
-        | Str st -> st = s
-
-module GRBMap =
-    let private keyFilter (f:F list) (k:string list) =
-        k
-        |> List.zip f
-        |> List.forall (fun (f, k) -> Filter.equals f k)
-
-    let sum (f:F list) (m:Map<string list, Gurobi.GRBVar>) =
-        m
-        |> Map.filter (fun k v -> keyFilter f k)
-        |> Map.toArray
-        |> Array.map (fun (k, v) -> 1.0 * v)
-        |> Array.reduce (+)
-
-let combinations (a: 'a Set) (b: 'b Set) =
-    a
-    |> Seq.collect (fun x -> b |> Set.map (fun y -> (x, y)))
-    |> Set.ofSeq
+open GurobiSharp
 
 
 let commodityIdx = Set.ofList ["Penciles"; "Pens"]
@@ -91,26 +57,33 @@ let inflowMap =
         ]
 
 module Gurobi =
-    let addVar (m:Gurobi.GRBModel) lb ub o t name =
-        m.AddVar(lb, ub, o, t, name)
+
 
 [<EntryPoint>]
 let main argv = 
     printfn "%A" argv
 
+    let capacity = 
+        capacityMap
+        |> Map.map (fun k v -> LinExpr v)
+
+    let inflow =
+        inflowMap
+        |> Map.map (fun k v -> LinExpr v)
+
     let env = new GRBEnv()
     let m = new GRBModel(env)
     let flow = 
         costMap
-        |> Map.map (fun k v -> Gurobi.addVar m 0.0 GRB.INFINITY v GRB.CONTINUOUS (k.ToString()))
+        |> addVarForMap m 0.0 GRB.INFINITY GRB.CONTINUOUS
 
     for (s, d) in arcIdx do
-        AddConstr m (GRBMap.sum [F.Any; F.Str s; F.Str d] flow) GRB.LESS_EQUAL (LinExpr capacityMap.[[s; d]]) (sprintf "Capacity_%A_%A" s d)
-        ()
+        addConstr m (sum flow ["*"; s; d]) GRB.LESS_EQUAL (capacity.[[s; d]]) (sprintf "Capacity_%A_%A" s d) 
+        |> ignore
 
     for (h, n) in (combinations commodityIdx nodeIdx) do
-        AddConstr m ((GRBMap.sum [F.Str h; F.Any; F.Str n] flow) + (LinExpr inflowMap.[[h; n]])) GRB.EQUAL (GRBMap.sum [F.Str h; F.Str n; F.Any] flow) (sprintf "Node_%A_%A" h n)
-        ()
+        addConstr m ((sum flow [h; "*"; n]) + (inflow.[[h; n]])) GRB.EQUAL (sum flow [h; n; "*"]) (sprintf "Node_%A_%A" h n) 
+        |> ignore
     
     m.Optimize()
 
