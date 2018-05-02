@@ -13,7 +13,7 @@ let nodeIdxs = sourceIdxs + destinationIdxs
 let arcIdxs = combinations sourceIdxs destinationIdxs
 let costIdxs = combinations commodityIdxs arcIdxs
 
-let capacityMap = 
+let capacity = 
     Map.ofList
         [
             (["Detroit"; "Boston"], 100.)
@@ -23,6 +23,7 @@ let capacityMap =
             (["Denver"; "New York"], 120.)
             (["Denver"; "Seattle"], 120.)
         ]
+    |> Map.map (fun k v -> LinExpr v)
 
 let costs =
     Map.ofList
@@ -41,7 +42,7 @@ let costs =
             (["Pens";    "Denver";  "Seattle"],  30.)
         ]
 
-let inflowMap = 
+let inflow = 
     Map.ofList
         [
             (["Pencils"; "Detroit"],     50.)
@@ -55,32 +56,23 @@ let inflowMap =
             (["Pens";    "New York"],   -30.)
             (["Pens";    "Seattle"],    -30.)
         ]
+    |> Map.map (fun k v -> LinExpr v)
 
 
 [<EntryPoint>]
 let main argv = 
-    printfn "%A" argv
-
-    let capacity = 
-        capacityMap
-        |> Map.map (fun k v -> LinExpr v)
-
-    let inflow =
-        inflowMap
-        |> Map.map (fun k v -> LinExpr v)
 
     let env = new GRBEnv()
     let m = new GRBModel(env)
     let flow = addVarsForMap m 0.0 Inf Cont costs
 
-    for (h, n) in (combinations commodityIdxs nodeIdxs) do
-        addConstr m ((sum flow [h; "*"; n]) + (inflow.[[h; n]])) Eq (sum flow [h; n; "*"]) (sprintf "Node_%A_%A" h n) 
-        |> ignore
+    let balanceConstraints =
+        [for (h, n) in (combinations commodityIdxs nodeIdxs) ->
+            addConstr m ((sum flow [h; "*"; n]) + (inflow.[[h; n]])) Eq (sum flow [h; n; "*"]) (sprintf "Node_%A_%A" h n)]
 
-    for (s, d) in arcIdxs do
-        addConstr m (sum flow ["*"; s; d]) LessEq (capacity.[[s; d]]) (sprintf "Capacity_%A_%A" s d) 
-        |> ignore
-
+    let capacityConstraints =
+        [for (s, d) in arcIdxs ->
+            addConstr m (sum flow ["*"; s; d]) LessEq (capacity.[[s; d]]) (sprintf "Capacity_%A_%A" s d)]
     
     m.Optimize()
 
