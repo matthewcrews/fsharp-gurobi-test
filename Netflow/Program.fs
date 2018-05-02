@@ -2,14 +2,16 @@
 // See the 'F# Tutorial' project for more help.
 open Gurobi
 open GurobiSharp
+open System
 
 
-let commodityIdx = Set.ofList ["Penciles"; "Pens"]
-let sourceIdx = Set.ofList ["Detroit"; "Denver"]
-let destinationIdx = Set.ofList ["Boston"; "New York"; "Seattle"]
-let nodeIdx = sourceIdx + destinationIdx
-let arcIdx = combinations sourceIdx destinationIdx
-let costIdx = combinations commodityIdx arcIdx
+// Define index sets
+let commodityIdxs = Set.ofList ["Pencils"; "Pens"]
+let sourceIdxs = Set.ofList ["Detroit"; "Denver"]
+let destinationIdxs = Set.ofList ["Boston"; "New York"; "Seattle"]
+let nodeIdxs = sourceIdxs + destinationIdxs
+let arcIdxs = combinations sourceIdxs destinationIdxs
+let costIdxs = combinations commodityIdxs arcIdxs
 
 let capacityMap = 
     Map.ofList
@@ -22,8 +24,7 @@ let capacityMap =
             (["Denver"; "Seattle"], 120.)
         ]
 
-
-let costMap =
+let costs =
     Map.ofList
         [
             (["Pencils"; "Detroit"; "Boston"], 10.)
@@ -40,7 +41,6 @@ let costMap =
             (["Pens";    "Denver";  "Seattle"],  30.)
         ]
 
-
 let inflowMap = 
     Map.ofList
         [
@@ -55,8 +55,6 @@ let inflowMap =
             (["Pens";    "New York"],   -30.)
             (["Pens";    "Seattle"],    -30.)
         ]
-
-module Gurobi =
 
 
 [<EntryPoint>]
@@ -74,20 +72,32 @@ let main argv =
     let env = new GRBEnv()
     let m = new GRBModel(env)
     let flow = 
-        costMap
-        |> addVarForMap m 0.0 GRB.INFINITY GRB.CONTINUOUS
+        costs
+        |> addVarForMap m 0.0 Inf Cont
 
-    for (s, d) in arcIdx do
-        addConstr m (sum flow ["*"; s; d]) GRB.LESS_EQUAL (capacity.[[s; d]]) (sprintf "Capacity_%A_%A" s d) 
+    for (h, n) in (combinations commodityIdxs nodeIdxs) do
+        addConstr m ((sum flow [h; "*"; n]) + (inflow.[[h; n]])) Eq (sum flow [h; n; "*"]) (sprintf "Node_%A_%A" h n) 
         |> ignore
 
-    for (h, n) in (combinations commodityIdx nodeIdx) do
-        addConstr m ((sum flow [h; "*"; n]) + (inflow.[[h; n]])) GRB.EQUAL (sum flow [h; n; "*"]) (sprintf "Node_%A_%A" h n) 
+    for (s, d) in arcIdxs do
+        addConstr m (sum flow ["*"; s; d]) LessEq (capacity.[[s; d]]) (sprintf "Capacity_%A_%A" s d) 
         |> ignore
+
     
     m.Optimize()
 
     if m.Status =  GRB.Status.OPTIMAL then
-        printfn "Hello world"
+        printfn "Model solved to optimality\n"
+        let solution = m.GetVars()
+        for commodityIdx in commodityIdxs do
+            printfn "\nOptimal flows for %A:" commodityIdx
+            for (sourceIdx, destIdx) in arcIdxs do
+                if flow.[[commodityIdx; sourceIdx; destIdx]].X > 0.0 then
+                    printfn "\t%A -> %A\tValue: %A" sourceIdx destIdx flow.[[commodityIdx; sourceIdx; destIdx]].X
+                ()
+            //for i,j in arcs:
+            //    if solution[h,i,j] > 0:
+            //        print('%s -> %s: %g' % (i, j, solution[h,i,j]))
 
+    Console.ReadKey() |> ignore
     0 // return an integer exit code

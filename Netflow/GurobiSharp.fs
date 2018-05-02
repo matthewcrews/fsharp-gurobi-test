@@ -36,18 +36,29 @@ let addVarForMap (model:Gurobi.GRBModel) lb ub t m =
     |> Map.map (fun k v -> addVar model lb ub v t (k.ToString()))
 
 
-let addConstr (m:Gurobi.GRBModel) linExpr o r n =
-    m.AddConstr(linExpr, o, r, n)
+let addConstr (model:Gurobi.GRBModel) linExpr o r n =
+    model.AddConstr(linExpr, o, r, n)
 
 let sum (m:Map<string list, Gurobi.GRBVar>) (f:string list) =
     let filter = Filter.create f
-    m
-    |> Map.filter (fun k v -> keyFilter filter k)
-    |> Map.toArray
-    |> Array.map (fun (k, v) -> 1.0 * v)
-    |> Array.reduce (+)
+
+    let vars = m |> Map.filter (fun k v -> keyFilter filter k)
+        
+    if vars.IsEmpty then
+        LinExpr 0.0
+    else
+        vars
+        |> Map.toArray
+        |> Array.map (fun (k, v) -> 1.0 * v)
+        |> Array.reduce (+)
 
 let combinations (a: 'a Set) (b: 'b Set) =
     a
     |> Seq.collect (fun x -> b |> Set.map (fun y -> (x, y)))
     |> Set.ofSeq
+
+let Inf = GRB.INFINITY
+let Eq = GRB.EQUAL
+let LessEq = GRB.LESS_EQUAL
+let GreaterEq = GRB.GREATER_EQUAL
+let Cont = GRB.CONTINUOUS
