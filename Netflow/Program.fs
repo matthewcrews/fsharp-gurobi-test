@@ -59,25 +59,51 @@ let inflow =
         ]
     |> Map.map (fun k v -> LinExpr v)
 
+type Comparison =
+| Equal
+| LessEqual
+| GreaterEqual
+
+type ConstraintTuple = {
+    Comparison: Comparison
+    LHS: Gurobi.GRBLinExpr
+    RHS: Gurobi.GRBLinExpr
+}
+
+
+let (:=) (lhs:GRBLinExpr) (rhs:GRBLinExpr) =
+    {Comparison = Comparison.Equal; LHS = lhs; RHS = rhs}
+
+let (<==) (lhs:GRBLinExpr) (rhs:GRBLinExpr) =
+    {Comparison = Comparison.LessEqual; LHS = lhs; RHS = rhs}
+
+let (>==) (lhs:GRBLinExpr) (rhs:GRBLinExpr) =
+    {Comparison = Comparison.GreaterEqual; LHS = lhs; RHS = rhs}
 
 [<EntryPoint>]
 let main argv = 
 
     let env = new GRBEnv()
-    let m = new GRBModel(env)
-    let flow = addVarsForMap m 0.0 Inf Cont costs |> VarMap.create
+    let model = new GRBModel(env)
+    let flow = addVarsForMap model 0.0 Inf Cont costs |> VarMap.create
 
-    let balanceConstraints =
-        [for (h, n) in commodityNodeIdxs ->
-            addConstr m (flow.sum([h; "*"; n]) + (inflow.[[h; n]])) Eq (flow.sum([h; n; "*"])) (sprintf "Node_%A_%A" h n)]
+    //let balanceConstraints = Constraint.ofSeq
+    //    // Auto gen indexes
+    //    {for (h, n) in commodityNodeIdxs ->
+    //        // Add name from iterator
+    //        addConstr model (flow.sum([h; "*"; n]) + (inflow.[[h; n]])) Eq (flow.sum([h; n; "*"])) (sprintf "Node_%A_%A" h n)}
+
+
+    let expressions = [for (c, n) in commodityNodeIdxs -> flow.sum([c; "*"; n]) + inflow.[[c; n]] := flow.sum([c; n; "*"])]
+        //[for (c, n) in commodityNodeIdxs -> (flow.sum([c; "*"; n] + inflow.[[c; n]]) := (flow.sum([c; n; "*"]))]
 
     let capacityConstraints =
         [for (s, d) in arcIdxs ->
-            addConstr m (flow.sum(["*"; s; d])) LessEq (capacity.[[s; d]]) (sprintf "Capacity_%A_%A" s d)]
+            addConstr model (flow.sum(["*"; s; d])) LessEq (capacity.[[s; d]]) (sprintf "Capacity_%A_%A" s d)]
     
-    m.Optimize()
+    model.Optimize()
 
-    if m.Status =  GRB.Status.OPTIMAL then
+    if model.Status =  GRB.Status.OPTIMAL then
         printfn "Model solved to optimality\n"
 
         for commodityIdx in commodityIdxs do

@@ -52,6 +52,12 @@ let sum (m:Map<string list, Gurobi.GRBVar>) (f:string list) =
         |> Array.map (fun (k, v) -> 1.0 * v)
         |> Array.reduce (+)
 
+type ConstraintSet = Map<string list, GRBConstr>
+
+//module ConstraintSet =
+//    let ofSeq (s: (string list) * GRBLinExpr) =
+//        let name = 
+
 type VarMap = {Mapping: Map<string list, GRBVar>} with
     static member create m =
         {Mapping = m}
