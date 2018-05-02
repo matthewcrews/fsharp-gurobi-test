@@ -71,9 +71,7 @@ let main argv =
 
     let env = new GRBEnv()
     let m = new GRBModel(env)
-    let flow = 
-        costs
-        |> addVarForMap m 0.0 Inf Cont
+    let flow = addVarsForMap m 0.0 Inf Cont costs
 
     for (h, n) in (combinations commodityIdxs nodeIdxs) do
         addConstr m ((sum flow [h; "*"; n]) + (inflow.[[h; n]])) Eq (sum flow [h; n; "*"]) (sprintf "Node_%A_%A" h n) 
@@ -88,16 +86,14 @@ let main argv =
 
     if m.Status =  GRB.Status.OPTIMAL then
         printfn "Model solved to optimality\n"
-        let solution = m.GetVars()
+
         for commodityIdx in commodityIdxs do
             printfn "\nOptimal flows for %A:" commodityIdx
+
             for (sourceIdx, destIdx) in arcIdxs do
                 if flow.[[commodityIdx; sourceIdx; destIdx]].X > 0.0 then
                     printfn "\t%A -> %A\tValue: %A" sourceIdx destIdx flow.[[commodityIdx; sourceIdx; destIdx]].X
                 ()
-            //for i,j in arcs:
-            //    if solution[h,i,j] > 0:
-            //        print('%s -> %s: %g' % (i, j, solution[h,i,j]))
 
     Console.ReadKey() |> ignore
     0 // return an integer exit code

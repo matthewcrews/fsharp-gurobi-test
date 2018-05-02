@@ -31,7 +31,7 @@ let LinExpr (x:float) =
 let addVar (model:Gurobi.GRBModel) lb ub obj t name =
     model.AddVar(lb, ub, obj, t, name)
 
-let addVarForMap (model:Gurobi.GRBModel) lb ub t m =
+let addVarsForMap (model:Gurobi.GRBModel) lb ub t m =
     m
     |> Map.map (fun k v -> addVar model lb ub v t (k.ToString()))
 
