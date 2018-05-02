@@ -12,6 +12,7 @@ let destinationIdxs = Set.ofList ["Boston"; "New York"; "Seattle"]
 let nodeIdxs = sourceIdxs + destinationIdxs
 let arcIdxs = combinations sourceIdxs destinationIdxs
 let costIdxs = combinations commodityIdxs arcIdxs
+let commodityNodeIdxs = combinations commodityIdxs nodeIdxs
 
 let capacity = 
     Map.ofList
@@ -64,15 +65,15 @@ let main argv =
 
     let env = new GRBEnv()
     let m = new GRBModel(env)
-    let flow = addVarsForMap m 0.0 Inf Cont costs
+    let flow = addVarsForMap m 0.0 Inf Cont costs |> VarMap.create
 
     let balanceConstraints =
-        [for (h, n) in (combinations commodityIdxs nodeIdxs) ->
-            addConstr m ((sum flow [h; "*"; n]) + (inflow.[[h; n]])) Eq (sum flow [h; n; "*"]) (sprintf "Node_%A_%A" h n)]
+        [for (h, n) in commodityNodeIdxs ->
+            addConstr m (flow.sum([h; "*"; n]) + (inflow.[[h; n]])) Eq (flow.sum([h; n; "*"])) (sprintf "Node_%A_%A" h n)]
 
     let capacityConstraints =
         [for (s, d) in arcIdxs ->
-            addConstr m (sum flow ["*"; s; d]) LessEq (capacity.[[s; d]]) (sprintf "Capacity_%A_%A" s d)]
+            addConstr m (flow.sum(["*"; s; d])) LessEq (capacity.[[s; d]]) (sprintf "Capacity_%A_%A" s d)]
     
     m.Optimize()
 
@@ -85,7 +86,6 @@ let main argv =
             for (sourceIdx, destIdx) in arcIdxs do
                 if flow.[[commodityIdx; sourceIdx; destIdx]].X > 0.0 then
                     printfn "\t%A -> %A\tValue: %A" sourceIdx destIdx flow.[[commodityIdx; sourceIdx; destIdx]].X
-                ()
 
     Console.ReadKey() |> ignore
     0 // return an integer exit code

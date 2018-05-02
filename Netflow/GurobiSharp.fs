@@ -52,6 +52,16 @@ let sum (m:Map<string list, Gurobi.GRBVar>) (f:string list) =
         |> Array.map (fun (k, v) -> 1.0 * v)
         |> Array.reduce (+)
 
+type VarMap = {Mapping: Map<string list, GRBVar>} with
+    static member create m =
+        {Mapping = m}
+
+    member this.sum(filter) =
+        sum this.Mapping filter
+
+    member this.Item
+        with get(x) = this.Mapping.[x]
+
 let combinations (a: 'a Set) (b: 'b Set) =
     a
     |> Seq.collect (fun x -> b |> Set.map (fun y -> (x, y)))
