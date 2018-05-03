@@ -36,7 +36,28 @@ let addVarsForMap (model:Gurobi.GRBModel) lb ub t m =
     |> Map.map (fun k v -> addVar model lb ub v t (k.ToString()))
 
 
-let addConstr (model:Gurobi.GRBModel) linExpr o r n =
+type LinExprComparison =
+| Equal
+| LessEqual
+| GreaterEqual
+
+type ConstraintTuple = {
+    Comparison: LinExprComparison
+    LHS: Gurobi.GRBLinExpr
+    RHS: Gurobi.GRBLinExpr
+}
+
+let (:=) (lhs:GRBLinExpr) (rhs:GRBLinExpr) =
+    {Comparison = LinExprComparison.Equal; LHS = lhs; RHS = rhs}
+
+let (<==) (lhs:GRBLinExpr) (rhs:GRBLinExpr) =
+    {Comparison = LinExprComparison.LessEqual; LHS = lhs; RHS = rhs}
+
+let (>==) (lhs:GRBLinExpr) (rhs:GRBLinExpr) =
+    {Comparison = LinExprComparison.GreaterEqual; LHS = lhs; RHS = rhs}
+
+let addConstr (model:Gurobi.GRBModel) (setName:string)  (constraintFunc:string list -> ConstraintTuple) =
+    let name = 
     model.AddConstr(linExpr, o, r, n)
 
 let sum (m:Map<string list, Gurobi.GRBVar>) (f:string list) =
@@ -52,11 +73,6 @@ let sum (m:Map<string list, Gurobi.GRBVar>) (f:string list) =
         |> Array.map (fun (k, v) -> 1.0 * v)
         |> Array.reduce (+)
 
-type ConstraintSet = Map<string list, GRBConstr>
-
-//module ConstraintSet =
-//    let ofSeq (s: (string list) * GRBLinExpr) =
-//        let name = 
 
 type VarMap = {Mapping: Map<string list, GRBVar>} with
     static member create m =

@@ -59,26 +59,7 @@ let inflow =
         ]
     |> Map.map (fun k v -> LinExpr v)
 
-type Comparison =
-| Equal
-| LessEqual
-| GreaterEqual
 
-type ConstraintTuple = {
-    Comparison: Comparison
-    LHS: Gurobi.GRBLinExpr
-    RHS: Gurobi.GRBLinExpr
-}
-
-
-let (:=) (lhs:GRBLinExpr) (rhs:GRBLinExpr) =
-    {Comparison = Comparison.Equal; LHS = lhs; RHS = rhs}
-
-let (<==) (lhs:GRBLinExpr) (rhs:GRBLinExpr) =
-    {Comparison = Comparison.LessEqual; LHS = lhs; RHS = rhs}
-
-let (>==) (lhs:GRBLinExpr) (rhs:GRBLinExpr) =
-    {Comparison = Comparison.GreaterEqual; LHS = lhs; RHS = rhs}
 
 [<EntryPoint>]
 let main argv = 
