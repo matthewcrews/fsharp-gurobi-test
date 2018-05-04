@@ -1,4 +1,4 @@
-﻿module GurobiSharp
+﻿module Gurobi.Fsharp
 open Gurobi
 
 

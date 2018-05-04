@@ -2,8 +2,7 @@
 // See the 'F# Tutorial' project for more help.
 open System
 open ListHelpers
-open Gurobi
-open GurobiSharp
+open Gurobi.Fsharp
 
 
 // Define index sets
