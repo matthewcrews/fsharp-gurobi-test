@@ -10,12 +10,10 @@ let runExample =
     let sources = Set.ofList ["Detroit"; "Denver"]
     let destinations = Set.ofList ["Boston"; "New York"; "Seattle"]
     let nodes = sources + destinations
-    let arcIdxs = combine2 sources destinations
-    let costIdxs = combine3 commodities sources destinations
     let commodityNodeIdxs = combine2 commodities nodes
 
     let capacity = 
-        Map.ofList
+        Map.linExprMap
             [
                 (["Detroit"; "Boston"], 100.)
                 (["Detroit"; "New York"], 80.)
@@ -24,7 +22,8 @@ let runExample =
                 (["Denver"; "New York"], 120.)
                 (["Denver"; "Seattle"], 120.)
             ]
-        |> Map.map (fun k v -> LinExpr v)
+
+    let arcs = capacity |> Map.toList |> List.map fst
 
     let costs =
         Map.ofList
@@ -44,7 +43,7 @@ let runExample =
             ]
 
     let inflow = 
-        Map.ofList
+        Map.linExprMap
             [
                 (["Pencils"; "Detroit"],     50.)
                 (["Pencils"; "Denver"],      60.)
@@ -57,28 +56,27 @@ let runExample =
                 (["Pens";    "New York"],   -30.)
                 (["Pens";    "Seattle"],    -30.)
             ]
-        |> Map.map (fun k v -> LinExpr v)
 
     let env = Environment.create
-    let model = Model.create env
-    let flow = Model.addVarsForMap model 0.0 INF CONTINUOUS costs 
-
-    let balanceConstraints =
-        Model.addConstrs model "balance" commodityNodeIdxs
-            (fun [h; j] -> (sum flow [h; "*"; j]) + inflow.[[h; j]] == (sum flow [h; j; "*"]))
+    let m = Model.create env "netflow"
+    let flow = Model.addVarsForMap m 0.0 INF CONTINUOUS costs 
 
     let capacityConstraints =
-        Model.addConstrs model "capacity" arcIdxs
+        Model.addConstrs m "capacity" arcs
             (fun [i; j] -> (sum flow ["*"; i; j] <== capacity.[[i; j]]))
-    
-    model.Optimize()
 
-    if model.Status = OPTIMAL then
+    let balanceConstraints =
+        Model.addConstrs m "balance" commodityNodeIdxs
+            (fun [h; j] -> (sum flow [h; "*"; j]) + inflow.[[h; j]] == (sum flow [h; j; "*"]))
+    
+    m.Optimize()
+
+    if m.Status = OPTIMAL then
         printfn "Model solved to optimality\n"
 
         for commodity in commodities do
             printfn "\nOptimal flows for %A:" commodity
 
-            for [source; destination] in arcIdxs do
+            for [source; destination] in arcs do
                 if flow.[[commodity; source; destination]].X > 0.0 then
                     printfn "\t%A -> %A\tValue: %A" source destination flow.[[commodity; source; destination]].X

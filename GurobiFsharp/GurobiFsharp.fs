@@ -45,8 +45,10 @@ module Environment =
         new GRBEnv()
 
 module Model =
-    let create (env:Gurobi.GRBEnv) =
-        new GRBModel(env)
+    let create (env:Gurobi.GRBEnv) (name:string) =
+        let m = new GRBModel(env)
+        m.ModelName <- name
+        m
 
     let addVar (model:Gurobi.GRBModel) lb ub obj t name =
         model.AddVar(lb, ub, obj, t, name)
@@ -108,6 +110,27 @@ type VarMap = {Mapping: Map<string list, GRBVar>} with
 
     member this.Item
         with get(x) = this.Mapping.[x]
+
+let multimap (x:('a list * double list) list) =
+    let keys = x |> List.map fst
+    let values = x |> List.map snd
+
+    let numValues = values.[0].Length
+
+    let buildValueMap (indexes:'a list list) (v:double list list) (valueIdx: int) =
+        List.zip indexes v
+        |> List.map (fun (i, j) -> i, LinExpr j.[valueIdx])
+        |> Map.ofList
+
+    let returnValues = 
+        [0 .. numValues]
+        |> List.map (fun i -> buildValueMap keys values i)
+
+    keys, returnValues
+
+module Map =
+    let linExprMap m =
+        m |> Map.ofList |> Map.map (fun k v -> LinExpr v)
 
 // Gurobi Constants
 
