@@ -1,11 +1,12 @@
 ﻿module GurobiSharp
 open Gurobi
 
-type Filter =
+
+type internal Filter =
 | Any
 | String of string
 
-module Filter =
+module internal Filter =
     let equals (f:Filter) (s:string) =
         match f with
         | Any -> true
@@ -19,21 +20,10 @@ module Filter =
 
         f |> List.map transform
 
-let private keyFilter (f:Filter list) (k:string list) =
+let internal keyFilter (f:Filter list) (k:string list) =
     k
     |> List.zip f
     |> List.forall (fun (f, k) -> Filter.equals f k)
-
-
-let LinExpr (x:float) =
-    Gurobi.GRBLinExpr(x)
-
-let addVar (model:Gurobi.GRBModel) lb ub obj t name =
-    model.AddVar(lb, ub, obj, t, name)
-
-let addVarsForMap (model:Gurobi.GRBModel) lb ub t m =
-    m
-    |> Map.map (fun k v -> addVar model lb ub v t (k.ToString()))
 
 
 type LinExprComparison =
@@ -47,7 +37,44 @@ type ConstraintTuple = {
     RHS: Gurobi.GRBLinExpr
 }
 
-let (:=) (lhs:GRBLinExpr) (rhs:GRBLinExpr) =
+let LinExpr (x:float) =
+    Gurobi.GRBLinExpr(x)
+
+module Environment =
+    let create =
+        new GRBEnv()
+
+module Model =
+    let create (env:Gurobi.GRBEnv) =
+        new GRBModel(env)
+
+    let addVar (model:Gurobi.GRBModel) lb ub obj t name =
+        model.AddVar(lb, ub, obj, t, name)
+
+    let addVarsForMap (model:Gurobi.GRBModel) lb ub t m =
+        m
+        |> Map.map (fun k v -> addVar model lb ub v t (k.ToString()))
+
+    let addConstr (model:Gurobi.GRBModel) (name:string) (constraintExpr: ConstraintTuple) =
+        let sense = 
+            match constraintExpr.Comparison with
+            | Equal -> GRB.EQUAL
+            | LessEqual -> GRB.LESS_EQUAL
+            | GreaterEqual -> GRB.GREATER_EQUAL
+
+        model.AddConstr(constraintExpr.LHS, sense, constraintExpr.RHS, name)
+
+    let addConstrs (model:GRBModel) (setName:string) (setIndexes:string list list) (constraintExpr: string list -> ConstraintTuple) =
+        let constraintName (sn:string) (idx:string list) = ([sn] @ idx) |> List.fold (+) "_"
+
+        setIndexes
+        |> List.map (fun x -> x, addConstr model (constraintName setName x) (constraintExpr x))
+        |> Map.ofList
+
+
+// Operators
+
+let (==) (lhs:GRBLinExpr) (rhs:GRBLinExpr) =
     {Comparison = LinExprComparison.Equal; LHS = lhs; RHS = rhs}
 
 let (<==) (lhs:GRBLinExpr) (rhs:GRBLinExpr) =
@@ -56,9 +83,7 @@ let (<==) (lhs:GRBLinExpr) (rhs:GRBLinExpr) =
 let (>==) (lhs:GRBLinExpr) (rhs:GRBLinExpr) =
     {Comparison = LinExprComparison.GreaterEqual; LHS = lhs; RHS = rhs}
 
-let addConstr (model:Gurobi.GRBModel) (setName:string)  (constraintFunc:string list -> ConstraintTuple) =
-    let name = 
-    model.AddConstr(linExpr, o, r, n)
+
 
 let sum (m:Map<string list, Gurobi.GRBVar>) (f:string list) =
     let filter = Filter.create f
@@ -84,13 +109,8 @@ type VarMap = {Mapping: Map<string list, GRBVar>} with
     member this.Item
         with get(x) = this.Mapping.[x]
 
-let combinations (a: 'a Set) (b: 'b Set) =
-    a
-    |> Seq.collect (fun x -> b |> Set.map (fun y -> (x, y)))
-    |> Set.ofSeq
+// Gurobi Constants
 
-let Inf = GRB.INFINITY
-let Eq = GRB.EQUAL
-let LessEq = GRB.LESS_EQUAL
-let GreaterEq = GRB.GREATER_EQUAL
-let Cont = GRB.CONTINUOUS
+let INF = GRB.INFINITY
+let CONTINUOUS = GRB.CONTINUOUS
+let OPTIMAL = GRB.Status.OPTIMAL
