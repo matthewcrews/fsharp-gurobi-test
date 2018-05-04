@@ -52,7 +52,7 @@ The `Model.adddVarsForMap` function takes a `Map<string list, float>` and produc
 ### Adding Constraints
 
 #### Python
-The `gurobipy` library offers a succinct way of expressing a whole set of constraints by using generators. There is additional magic going on under the hood though that may not be obvious at first. The following method generates a set of constraints for each element in `arcs` but also creates a meaningful constraint name. The prefix for the constraint name is the last argument of the method (`"cap"` in this instance).
+The `gurobipy` library offers a succinct way of expressing a whole set of constraints by using generators. There is additional magic going on under the hood though that may not be obvious at first. The following method generates a set of constraints for each element in `arcs` but also creates a meaningful constraint name. The prefix for the constraint name is the last argument of the method (`"capacity"` in this instance).
 
 ```python
 # Arc capacity constraints
