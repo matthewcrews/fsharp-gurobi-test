@@ -8,12 +8,12 @@
     <ProjectGuid>fa2190d8-c6b3-446d-b7db-f0534801faae</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>Netflow</RootNamespace>
-    <AssemblyName>Netflow</AssemblyName>
+    <AssemblyName>Examples</AssemblyName>
     <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <UseStandardResourceNames>true</UseStandardResourceNames>
     <TargetFSharpCoreVersion>4.4.3.0</TargetFSharpCoreVersion>
-    <Name>Netflow</Name>
+    <Name>Examples</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -80,6 +80,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ListHelpers.fs" />
+    <Compile Include="Netflow.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
     <Content Include="packages.config" />

@@ -1,4 +1,4 @@
-﻿module ListHelpers
+﻿module Examples.ListHelpers
 
 let combine2 xs ys = [
     for x in xs do

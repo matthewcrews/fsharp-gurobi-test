@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27428.2043
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Netflow", "Netflow\Netflow.fsproj", "{FA2190D8-C6B3-446D-B7DB-F0534801FAAE}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Examples", "Netflow\Examples.fsproj", "{FA2190D8-C6B3-446D-B7DB-F0534801FAAE}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "GurobiFsharp", "GurobiFsharp\GurobiFsharp.fsproj", "{688BE5D8-4C7B-4494-8E08-DFC5E4B118FB}"
 EndProject
