@@ -12,7 +12,7 @@ Gurobi provides a Python library for their solver which allows for simple and el
 
 The following shows an example of a network flow problem provided by Gurobi and modeled in Python. The full formulation can be [found here](http://www.gurobi.com/documentation/8.0/examples/netflow_py.html). In this example I am just comparing and contrasting the Python and F# formulation methods.
 
-> ***Note***: All Python code is copyrighted by Gurobi Optimization, LLC
+> ***Disclaimer***: All Python code is copyrighted by Gurobi Optimization, LLC
 
 ### Creating a model
 
