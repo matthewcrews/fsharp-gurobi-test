@@ -21,6 +21,8 @@ The following shows an example of a network flow problem provided by Gurobi and 
 In Python the creation of the model and decision variables is quite straightforward.
 
 ```python
+# Copyright 2018, Gurobi Optimization, LLC
+
 # Create optimization model
 m = Model('netflow')
 
