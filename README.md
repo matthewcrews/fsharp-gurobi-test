@@ -58,7 +58,7 @@ The `gurobipy` library offers a succinct way of expressing a whole set of constr
 # Arc capacity constraints
 capacityConstraints = 
     m.addConstrs(
-        (flow.sum('*',i,j) <= capacity[i,j] for i,j in arcs), "cap")
+        (flow.sum('*',i,j) <= capacity[i,j] for i,j in arcs), "capacity")
 ```
 
 
